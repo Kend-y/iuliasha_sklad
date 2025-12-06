@@ -26,6 +26,12 @@ public class NotificationHub : Hub
             {
                 await Groups.AddToGroupAsync(Context.ConnectionId, "admins");
             }
+            
+            // Если сотрудник, добавляем в группу сотрудников
+            if (role == "Employee")
+            {
+                await Groups.AddToGroupAsync(Context.ConnectionId, "employees");
+            }
         }
         
         await base.OnConnectedAsync();
@@ -46,6 +52,11 @@ public class NotificationHub : Hub
             if (role == "Admin")
             {
                 await Groups.RemoveFromGroupAsync(Context.ConnectionId, "admins");
+            }
+            
+            if (role == "Employee")
+            {
+                await Groups.RemoveFromGroupAsync(Context.ConnectionId, "employees");
             }
         }
         

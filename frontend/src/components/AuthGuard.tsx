@@ -6,7 +6,8 @@ import { useAuthStore } from "@/lib/store";
 
 interface AuthGuardProps {
   children: React.ReactNode;
-  requiredRole?: "admin" | "client" | null;
+  requiredRole?: "admin" | "client" | "employee" | null;
+  allowedRoles?: string[];
 }
 
 /**
@@ -16,6 +17,7 @@ interface AuthGuardProps {
 export default function AuthGuard({
   children,
   requiredRole = null,
+  allowedRoles,
 }: AuthGuardProps) {
   const router = useRouter();
   const { isAuthenticated, user } = useAuthStore();
@@ -28,13 +30,33 @@ export default function AuthGuard({
       return;
     }
 
-    const userRole = user?.role?.toLowerCase();
+    const userRole = user?.role;
+    const userRoleLower = userRole?.toLowerCase();
 
-    // Проверяем роль (case-insensitive)
-    if (requiredRole && userRole !== requiredRole) {
+    // Проверяем список разрешённых ролей
+    if (allowedRoles && allowedRoles.length > 0) {
+      const isAllowed = allowedRoles.some(
+        (role) => role.toLowerCase() === userRoleLower
+      );
+      if (!isAllowed) {
+        // Перенаправляем на соответствующий дашборд
+        if (userRoleLower === "admin") {
+          router.push("/admin");
+        } else if (userRoleLower === "employee") {
+          router.push("/employee");
+        } else {
+          router.push("/client");
+        }
+        return;
+      }
+    }
+    // Проверяем конкретную роль (case-insensitive)
+    else if (requiredRole && userRoleLower !== requiredRole) {
       // Перенаправляем на соответствующий дашборд
-      if (userRole === "admin") {
+      if (userRoleLower === "admin") {
         router.push("/admin");
+      } else if (userRoleLower === "employee") {
+        router.push("/employee");
       } else {
         router.push("/client");
       }
@@ -42,7 +64,7 @@ export default function AuthGuard({
     }
 
     setIsLoading(false);
-  }, [isAuthenticated, user, requiredRole, router]);
+  }, [isAuthenticated, user, requiredRole, allowedRoles, router]);
 
   if (isLoading) {
     return (

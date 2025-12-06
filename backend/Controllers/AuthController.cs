@@ -207,4 +207,41 @@ public class AuthController : ControllerBase
             }
         });
     }
+    
+    /// <summary>
+    /// Сброс пароля для тестирования (только development)
+    /// </summary>
+    [HttpPost("reset-password")]
+    public async Task<ActionResult<ApiResponse<object>>> ResetPassword([FromBody] ResetPasswordRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request.Email) || string.IsNullOrWhiteSpace(request.NewPassword))
+        {
+            return BadRequest(new ApiResponse<object> 
+            { 
+                Success = false, 
+                Message = "Email и новый пароль обязательны" 
+            });
+        }
+        
+        var user = await _context.Users
+            .FirstOrDefaultAsync(u => u.Email.ToLower() == request.Email.ToLower());
+        
+        if (user == null)
+        {
+            return NotFound(new ApiResponse<object> 
+            { 
+                Success = false, 
+                Message = "Пользователь не найден" 
+            });
+        }
+        
+        user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
+        await _context.SaveChangesAsync();
+        
+        return Ok(new ApiResponse<object>
+        {
+            Success = true,
+            Message = "Пароль успешно обновлён"
+        });
+    }
 }

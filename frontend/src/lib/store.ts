@@ -149,3 +149,105 @@ export const useOrdersStore = create<OrdersState>((set) => ({
 
   addOrder: (order) => set((state) => ({ orders: [order, ...state.orders] })),
 }));
+
+// ========== Items Types ==========
+export interface Category {
+  id: number;
+  name: string;
+  description: string;
+  icon: string;
+  itemsCount: number;
+  isActive: boolean;
+}
+
+export interface StorageLocation {
+  id: number;
+  code: string;
+  name: string;
+  section: string;
+  shelf: string;
+  cell: string;
+  size: "small" | "medium" | "large" | "extra_large";
+  isOccupied: boolean;
+  isActive: boolean;
+  dailyRate: number;
+  status: "active" | "maintenance" | "reserved";
+  reservedUntil?: string;
+  warehouseId: number;
+  warehouseName: string;
+  itemsCount: number;
+  currentItemName?: string;
+}
+
+export interface Item {
+  id: number;
+  uniqueCode: string;
+  name: string;
+  description: string;
+  condition: "new" | "good" | "fair" | "poor" | "damaged";
+  status: "pending_intake" | "stored" | "pending_release" | "released" | "disposed";
+  photoUrl?: string;
+  estimatedValue?: number;
+  dailyStorageCost: number;
+  intakeDate?: string;
+  plannedReleaseDate?: string;
+  actualReleaseDate?: string;
+  notes?: string;
+  createdAt: string;
+  updatedAt?: string;
+  ownerId: number;
+  ownerName: string;
+  ownerEmail: string;
+  categoryId: number;
+  categoryName: string;
+  categoryIcon: string;
+  storageLocationId?: number;
+  storageLocationCode?: string;
+  warehouseId: number;
+  warehouseName: string;
+  storageDays: number;
+  totalStorageCost: number;
+}
+
+export interface ItemMovement {
+  id: number;
+  actionType: string;
+  description: string;
+  fromLocationId?: number;
+  fromLocationCode?: string;
+  toLocationId?: number;
+  toLocationCode?: string;
+  previousCondition?: string;
+  newCondition?: string;
+  previousStatus?: string;
+  newStatus?: string;
+  notes?: string;
+  createdAt: string;
+  itemId: number;
+  itemName: string;
+  performedById: number;
+  performedByName: string;
+}
+
+// ========== Items Store ==========
+interface ItemsState {
+  items: Item[];
+  setItems: (items: Item[]) => void;
+  updateItemStatus: (itemId: number, status: Item["status"]) => void;
+  addItem: (item: Item) => void;
+}
+
+export const useItemsStore = create<ItemsState>((set) => ({
+  items: [],
+
+  setItems: (items) => set({ items }),
+
+  updateItemStatus: (itemId, status) =>
+    set((state) => ({
+      items: state.items.map((i) =>
+        i.id === itemId ? { ...i, status } : i
+      ),
+    })),
+
+  addItem: (item) => set((state) => ({ items: [item, ...state.items] })),
+}));

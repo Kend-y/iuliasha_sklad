@@ -10,7 +10,7 @@ export default function ClientLayout({
 }) {
   return (
     <AuthGuard requiredRole="client">
-      <DashboardLayout>{children}</DashboardLayout>
+      <DashboardLayout role="client">{children}</DashboardLayout>
     </AuthGuard>
   );
 }

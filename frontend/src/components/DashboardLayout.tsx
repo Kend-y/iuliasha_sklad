@@ -35,12 +35,13 @@ import { NotificationBadge } from "./UI";
 
 interface LayoutProps {
   children: React.ReactNode;
+  role?: "admin" | "employee" | "client";
 }
 
 /**
  * Основной Layout с градиентным фоном и glassmorphism
  */
-export default function DashboardLayout({ children }: LayoutProps) {
+export default function DashboardLayout({ children, role }: LayoutProps) {
   const router = useRouter();
   const pathname = usePathname();
   const { user, logout, token } = useAuthStore();
@@ -60,12 +61,15 @@ export default function DashboardLayout({ children }: LayoutProps) {
   const notificationRef = useRef<HTMLDivElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
 
-  const isAdmin = user?.role?.toLowerCase() === "admin";
-  const basePath = isAdmin ? "/admin" : "/client";
+  const userRole = role || user?.role?.toLowerCase();
+  const isAdmin = userRole === "admin";
+  const isEmployee = userRole === "employee";
+  const basePath = isAdmin ? "/admin" : isEmployee ? "/employee" : "/client";
 
   // Навигационные ссылки с Heroicons
-  const navLinks = isAdmin
-    ? [
+  const getNavLinks = () => {
+    if (isAdmin) {
+      return [
         { href: "/admin", label: "Дашборд", icon: ChartBarIcon },
         {
           href: "/admin/orders",
@@ -79,16 +83,32 @@ export default function DashboardLayout({ children }: LayoutProps) {
         },
         { href: "/admin/admins", label: "Админы", icon: UserGroupIcon },
         { href: "/admin/history", label: "История", icon: ClockIcon },
-      ]
-    : [
-        { href: "/client", label: "Дашборд", icon: ChartBarIcon },
-        {
-          href: "/client/orders",
-          label: "Мои заказы",
-          icon: ClipboardDocumentListIcon,
-        },
-        { href: "/client/new-order", label: "Новый заказ", icon: PlusIcon },
       ];
+    }
+    
+    if (isEmployee) {
+      return [
+        { href: "/employee", label: "Дашборд", icon: ChartBarIcon },
+        { href: "/employee/items", label: "Вещи", icon: CubeIcon },
+        { href: "/employee/locations", label: "Места хранения", icon: BuildingStorefrontIcon },
+      ];
+    }
+    
+    // Client
+    return [
+      { href: "/client", label: "Дашборд", icon: ChartBarIcon },
+      { href: "/client/items", label: "Мои вещи", icon: CubeIcon },
+      { href: "/client/new-item", label: "Сдать вещь", icon: PlusIcon },
+      {
+        href: "/client/orders",
+        label: "Мои заказы",
+        icon: ClipboardDocumentListIcon,
+      },
+      { href: "/client/new-order", label: "Новый заказ", icon: PlusIcon },
+    ];
+  };
+  
+  const navLinks = getNavLinks();
 
   // Загрузка уведомлений
   useEffect(() => {

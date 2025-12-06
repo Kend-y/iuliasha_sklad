@@ -169,4 +169,121 @@ public class NotificationService
         return await _context.Notifications
             .CountAsync(n => n.UserId == userId && !n.IsRead);
     }
+    
+    /// <summary>
+    /// Уведомляет сотрудников о новой вещи на приём
+    /// </summary>
+    public async Task NotifyAboutNewItemAsync(Item item)
+    {
+        var employees = await _context.Users
+            .Where(u => (u.Role == "Admin" || u.Role == "Employee") && u.IsActive)
+            .ToListAsync();
+        
+        foreach (var employee in employees)
+        {
+            var notification = new Notification
+            {
+                Title = "Новая заявка на хранение",
+                Message = $"Клиент {item.Owner?.FullName} подал заявку на хранение: {item.Name}",
+                Type = "new_item",
+                UserId = employee.Id,
+                WarehouseId = item.WarehouseId
+            };
+            
+            _context.Notifications.Add(notification);
+        }
+        
+        await _context.SaveChangesAsync();
+        
+        var notificationDto = new NotificationDto
+        {
+            Title = "Новая заявка на хранение",
+            Message = $"Клиент {item.Owner?.FullName} подал заявку на хранение: {item.Name}",
+            Type = "new_item",
+            WarehouseId = item.WarehouseId,
+            CreatedAt = DateTime.UtcNow
+        };
+        
+        await _hubContext.Clients.Groups("admins", "employees").SendAsync("ReceiveNotification", notificationDto);
+    }
+    
+    /// <summary>
+    /// Уведомляет владельца об изменении статуса вещи
+    /// </summary>
+    public async Task NotifyOwnerAboutItemStatusAsync(Item item, string oldStatus)
+    {
+        var statusText = item.Status switch
+        {
+            "stored" => "принята на хранение",
+            "pending_release" => "ожидает выдачи",
+            "released" => "выдана",
+            "disposed" => "утилизирована",
+            _ => item.Status
+        };
+        
+        var notification = new Notification
+        {
+            Title = "Статус вещи изменён",
+            Message = $"Ваша вещь \"{item.Name}\" {statusText}",
+            Type = "item_status_changed",
+            UserId = item.OwnerId,
+            WarehouseId = item.WarehouseId
+        };
+        
+        _context.Notifications.Add(notification);
+        await _context.SaveChangesAsync();
+        
+        var notificationDto = new NotificationDto
+        {
+            Id = notification.Id,
+            Title = notification.Title,
+            Message = notification.Message,
+            Type = notification.Type,
+            WarehouseId = item.WarehouseId,
+            CreatedAt = notification.CreatedAt
+        };
+        
+        await _hubContext.Clients.User(item.OwnerId.ToString()).SendAsync("ReceiveNotification", notificationDto);
+        await _hubContext.Clients.User(item.OwnerId.ToString()).SendAsync("ItemStatusChanged", new { 
+            itemId = item.Id, 
+            newStatus = item.Status 
+        });
+    }
+    
+    /// <summary>
+    /// Уведомляет сотрудников о запросе на выдачу
+    /// </summary>
+    public async Task NotifyAboutReleaseRequestAsync(Item item)
+    {
+        var employees = await _context.Users
+            .Where(u => (u.Role == "Admin" || u.Role == "Employee") && u.IsActive)
+            .ToListAsync();
+        
+        foreach (var employee in employees)
+        {
+            var notification = new Notification
+            {
+                Title = "Запрос на выдачу",
+                Message = $"Клиент {item.Owner?.FullName} запросил выдачу вещи: {item.Name}",
+                Type = "release_request",
+                UserId = employee.Id,
+                WarehouseId = item.WarehouseId
+            };
+            
+            _context.Notifications.Add(notification);
+        }
+        
+        await _context.SaveChangesAsync();
+        
+        var notificationDto = new NotificationDto
+        {
+            Title = "Запрос на выдачу",
+            Message = $"Клиент {item.Owner?.FullName} запросил выдачу вещи: {item.Name}",
+            Type = "release_request",
+            WarehouseId = item.WarehouseId,
+            CreatedAt = DateTime.UtcNow
+        };
+        
+        await _hubContext.Clients.Groups("admins", "employees").SendAsync("ReceiveNotification", notificationDto);
+    }
 }
