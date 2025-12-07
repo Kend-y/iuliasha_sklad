@@ -36,14 +36,16 @@ export default function ClientOrdersPage() {
       const response = await ordersApi.getMyOrders(page, 10, status);
 
       if (response.success) {
-        setOrders(response.data);
-        setTotalPages(Math.ceil(response.totalCount / 10));
+        setOrders(response.data || []);
+        setTotalPages(Math.ceil((response.totalCount || 0) / 10));
       } else {
         toast.error(response.message || "Ошибка загрузки заказов");
+        setOrders([]);
       }
     } catch (error: any) {
       console.error("Ошибка загрузки заказов:", error);
       toast.error(error.response?.data?.message || "Ошибка загрузки заказов");
+      setOrders([]);
     } finally {
       setIsLoading(false);
     }

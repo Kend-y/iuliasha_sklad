@@ -73,15 +73,17 @@ export default function ClientItemsPage() {
       const response = await itemsApi.getMyItems(page, 10, status, categoryFilter || undefined);
 
       if (response.success) {
-        setItems(response.data);
-        setTotalPages(Math.ceil(response.totalCount / 10));
-        setTotalCount(response.totalCount);
+        setItems(response.data || []);
+        setTotalPages(Math.ceil((response.totalCount || 0) / 10));
+        setTotalCount(response.totalCount || 0);
       } else {
         toast.error(response.message || "Ошибка загрузки вещей");
+        setItems([]);
       }
     } catch (error: any) {
       console.error("Ошибка загрузки вещей:", error);
       toast.error(error.response?.data?.message || "Ошибка загрузки вещей");
+      setItems([]);
     } finally {
       setIsLoading(false);
     }
